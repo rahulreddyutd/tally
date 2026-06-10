@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tally</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0e0e0e;
+    color: #f0f0f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ---- SCREEN MANAGEMENT ---- */
+  .screen { display: none; width: 100%; max-width: 480px; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+  /* ---- HOME / LIST SCREEN ---- */
+  #homeScreen {
+    padding: 48px 24px 24px;
+    gap: 12px;
+    min-height: 100vh;
+  }
+
+  #homeScreen h1 {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    align-self: flex-start;
+  }
+
+  .tally-card {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .tally-card:hover { background: #222; }
+  .tally-card-name { font-size: 16px; font-weight: 500; }
+  .tally-card-count { font-size: 28px; font-weight: 600; color: #c8f97d; }
+
+  .new-btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 16px;
+    background: none;
+    border: 1px dashed #333;
+    border-radius: 14px;
+    color: #555;
+    font-size: 15px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .new-btn:hover { border-color: #555; color: #aaa; }
+
+  /* ---- CREATE SCREEN ---- */
+  #createScreen {
+    padding: 80px 24px 24px;
+    gap: 20px;
+    min-height: 100vh;
+    justify-content: flex-start;
+  }
+
+  #createScreen h2 {
+    font-size: 22px;
+    font-weight: 600;
+    align-self: flex-start;
+  }
+
+  #createScreen p {
+    font-size: 14px;
+    color: #666;
+    align-self: flex-start;
+    margin-top: -12px;
+  }
+
+  .name-input {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 18px;
+    color: #f0f0f0;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .name-input:focus { border-color: #c8f97d; }
+  .name-input::placeholder { color: #444; }
+
+  .start-btn {
+    width: 100%;
+    background: #c8f97d;
+    color: #0e0e0e;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .start-btn:hover { opacity: 0.88; }
+  .start-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .back-link {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .back-link:hover { color: #aaa; }
+
+  /* ---- COUNTER SCREEN ---- */
+  #counterScreen {
+    min-height: 100vh;
+    justify-content: space-between;
+    padding: 0;
+  }
+
+  .counter-top {
+    width: 100%;
+    padding: 48px 24px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .counter-name {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  .counter-number {
+    font-size: 96px;
+    font-weight: 700;
+    color: #c8f97d;
+    line-height: 1;
+    letter-spacing: -4px;
+    font-variant-numeric: tabular-nums;
+    transition: transform 0.07s ease;
+  }
+
+  .counter-number.bump {
+    transform: scale(1.08);
+  }
+
+  .tap-zone {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .tap-btn {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, transform 0.1s;
+  }
+
+  .tap-zone:active .tap-btn {
+    background: #242424;
+    transform: scale(0.95);
+  }
+
+  .tap-btn svg {
+    width: 110px;
+    height: 110px;
+    stroke: #c8f97d;
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .counter-bottom {
+    width: 100%;
+    padding: 0 24px 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .small-action {
+    background: none;
+    border: none;
+    color: #444;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 8px 0;
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .small-action:hover { color: #aaa; }
+
+  .save-btn-counter {
+    background: #c8f97d;
+    color: #0e0e0e;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .save-btn-counter:hover { opacity: 0.85; }
+
+  /* ---- SAVED TOAST ---- */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #c8f97d;
+    color: #0e0e0e;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 100px;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- HOME: list of counters -->
+<div id="homeScreen" class="screen active">
+  <h1>My Tallies</h1>
+  <div id="tallyList"></div>
+  <button class="new-btn" onclick="goCreate()">+ New tally</button>
+</div>
+
+<!-- CREATE: name your counter -->
+<div id="createScreen" class="screen">
+  <h2>Name your tally</h2>
+  <p>Give it a name before you start counting.</p>
+  <input class="name-input" id="nameInput" placeholder="e.g. Push-ups, Cars, Laps…" maxlength="40" oninput="checkName()" />
+  <button class="start-btn" id="startBtn" disabled onclick="startCounter()">Start counting →</button>
+  <button class="back-link" onclick="goHome()">← Back</button>
+</div>
+
+<!-- COUNTER: the main tap screen -->
+<div id="counterScreen" class="screen">
+  <div class="counter-top">
+    <div class="counter-name" id="counterName"></div>
+    <div class="counter-number" id="counterNum">0</div>
+  </div>
+
+  <div class="tap-zone" id="tapZone" onclick="tap()">
+    <div class="tap-btn">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="18 15 12 9 6 15"></polyline>
+      </svg>
+    </div>
+  </div>
+
+  <div class="counter-bottom">
+    <button class="small-action" onclick="undoTap()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+      Undo
+    </button>
+    <button class="small-action" onclick="resetCounter()">Reset</button>
+    <button class="save-btn-counter" onclick="saveCounter()">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = 'tallies_v1';
+  let tallies = [];
+  let active = null; // { id, name, count, history }
+
+  function load() {
+    try { tallies = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { tallies = []; }
+  }
+
+  function persist() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tallies));
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function goHome() {
+    active = null;
+    renderHome();
+    showScreen('homeScreen');
+  }
+
+  function goCreate() {
+    document.getElementById('nameInput').value = '';
+    document.getElementById('startBtn').disabled = true;
+    showScreen('createScreen');
+    setTimeout(() => document.getElementById('nameInput').focus(), 100);
+  }
+
+  function checkName() {
+    const v = document.getElementById('nameInput').value.trim();
+    document.getElementById('startBtn').disabled = v.length === 0;
+  }
+
+  function startCounter() {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) return;
+    active = { id: Date.now(), name, count: 0, history: [] };
+    openCounter();
+  }
+
+  function openCounter() {
+    document.getElementById('counterName').textContent = active.name;
+    document.getElementById('counterNum').textContent = active.count;
+    showScreen('counterScreen');
+  }
+
+  function tap() {
+    active.count++;
+    active.history.push(active.count);
+    const el = document.getElementById('counterNum');
+    el.textContent = active.count;
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+    setTimeout(() => el.classList.remove('bump'), 120);
+  }
+
+  function undoTap() {
+    if (active.history.length === 0) return;
+    active.history.pop();
+    active.count = active.history.length > 0 ? active.history[active.history.length - 1] : 0;
+    document.getElementById('counterNum').textContent = active.count;
+  }
+
+  function resetCounter() {
+    if (active.count === 0) return;
+    active.count = 0;
+    active.history = [];
+    document.getElementById('counterNum').textContent = 0;
+  }
+
+  function saveCounter() {
+    const existing = tallies.findIndex(t => t.id === active.id);
+    const record = { id: active.id, name: active.name, count: active.count };
+    if (existing >= 0) tallies[existing] = record;
+    else tallies.unshift(record);
+    persist();
+    showToast('Saved ✓');
+  }
+
+  function renderHome() {
+    load();
+    const list = document.getElementById('tallyList');
+    if (tallies.length === 0) {
+      list.innerHTML = '';
+      return;
+    }
+    list.innerHTML = tallies.map(t => `
+      <div class="tally-card" onclick="openSaved(${t.id})">
+        <span class="tally-card-name">${escHtml(t.name)}</span>
+        <span class="tally-card-count">${t.count}</span>
+      </div>
+    `).join('');
+  }
+
+  function openSaved(id) {
+    const t = tallies.find(t => t.id === id);
+    if (!t) return;
+    active = { id: t.id, name: t.name, count: t.count, history: [] };
+    openCounter();
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2000);
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  load();
+  renderHome();
+</script>
+</body>
+</html>
